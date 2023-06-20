@@ -28,9 +28,8 @@ let movieData;
 let flagForDate = true;
 let flagForRating = false;
 let favoritesIcon;
-let currentPage = +localStorage.getItem('page-number') ?? 1, lastPage = 3;
+let currentPage = localStorage.getItem('page-number') || 1, lastPage = 3;
 let favoritesArray = JSON.parse(localStorage.getItem('favorite-movies')) ?? [];
-
 
 // ! ================ FUNCTIONS ================
 
@@ -278,7 +277,7 @@ function setPageNumberToLocal() {
 
 // ! ================ EVENT LISTENERS ================
 
-window.addEventListener('load', () => {
+window.addEventListener('DOMContentLoaded', () => {
     getMovies(API_URL, currentPage);
     checkPagesRange();
 });
