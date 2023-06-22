@@ -70,6 +70,7 @@ function remapData(data) {
             voteAverage: movie.vote_average,
             releaseDate: movie.release_date,
             id: movie.id,
+            overview: movie.overview,
             favorites: false,
         }
     });
@@ -80,7 +81,7 @@ function remapData(data) {
 function renderMovies(data) {
     moviesList.textContent = '';
     data.forEach((movie) => {
-        const { title, posterPath, voteCount, voteAverage, id, favorites } = movie;
+        const { title, posterPath, voteCount, voteAverage, id, overview, favorites } = movie;
 
         // Create <li> element
         const listItem = document.createElement("li");
@@ -109,6 +110,12 @@ function renderMovies(data) {
         const ratingDiv = document.createElement("div");
         ratingDiv.classList.add("rating");
         cardDetails.appendChild(ratingDiv);
+
+
+        const overviewDiv = document.createElement("div");
+        overviewDiv.classList.add("overview");
+        overviewDiv.textContent = `Overview: ${overview}`;
+        cardDetails.appendChild(overviewDiv);
 
         // Create first rating <div>
         const ratingDiv1 = document.createElement("div");
