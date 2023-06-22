@@ -21,19 +21,21 @@ const previousPageBtn = document.getElementById('previous__page__btn');
 const currentPageBtn = document.getElementById('current__page__btn');
 const nextPageBtn = document.getElementById('next__page__btn');
 
-
 // ! ================ OTHER VARIABLES ================
 
 let movieData;
 let flagForDate = true;
 let flagForRating = false;
 let favoritesIcon;
-let currentPage = localStorage.getItem('page-number') || 1, lastPage = 3;
+let currentPage = localStorage.getItem('page-number') || 1, lastPage, demoLastPage = 3;
 let favoritesArray = JSON.parse(localStorage.getItem('favorite-movies')) ?? [];
+let SEARCH_URL = '';
 
-// ! ================ FUNCTIONS ================
+/**
+ * ! ================ FUNCTIONS ================
+*/
 
-// ! =============== FETCHING MOVIES ===============
+// ! =============== FETCHING DATA FROM SERVER ===============
 
 async function getMovies(apiURL, pageNumber = 1) {
     try {
@@ -41,8 +43,15 @@ async function getMovies(apiURL, pageNumber = 1) {
         const response = await fetch(apiURL);
         let data = await response.json();
         // lastPage = data.total_pages;
+        if (data.total_pages < demoLastPage) {
+            lastPage = data.total_pages;
+        } else {
+            lastPage = demoLastPage;
+        }
         data = remapData(data);
         movieData = data;
+        checkFavorites();
+        checkPagesRange();
         renderMovies(movieData);
         return data;
     } catch (error) {
@@ -114,7 +123,7 @@ function renderMovies(data) {
         // Create <p id="vote__average"> element
         const voteAverageElement = document.createElement("p");
         voteAverageElement.id = "vote__average";
-        voteAverageElement.textContent = `Rating: ${voteAverage}`;
+        voteAverageElement.textContent = `Rating: ${voteAverage.toFixed(1)}`;
         ratingDiv1.appendChild(voteAverageElement);
 
         // Create favorites <div> element
@@ -131,7 +140,8 @@ function renderMovies(data) {
         // Append the <li> element to the movie container
         moviesList.appendChild(listItem);
 
-        // // ! Another way to create movie card
+        // ! Another way to create movie card
+
         // moviesList.innerHTML += `
         //     <li class="movie__card">
         //         <img
@@ -162,6 +172,16 @@ function renderMovies(data) {
 }
 
 // ! =============== FAVORITES ===============
+
+function checkFavorites() {
+    movieData.forEach((movie) => {
+        favoritesArray.forEach(favMovie => {
+            if (movie.id === favMovie.id) {
+                movie.favorites = true;
+            }
+        });
+    });
+}
 
 function setFavoritesToLocal() {
     localStorage.setItem('favorite-movies', JSON.stringify(favoritesArray));
@@ -218,10 +238,14 @@ function searchMovie(e) {
     favoritesBtn.classList.remove('active-tab');
     const searchInput = search.value;
     if (searchInput.trim()) {
-        getMovies(searchURL + '&query=' + searchInput);
+        SEARCH_URL = `${searchURL}&query=${searchInput}`;
+        getMovies(SEARCH_URL, 1);
     } else {
-        getMovies(API_URL);
+        getMovies(API_URL, currentPage);
+        SEARCH_URL = '';
     }
+    currentPage = 1;
+    setPageNumberToLocal();
 }
 
 function checkDebounceDemo() {
@@ -255,37 +279,49 @@ function checkPagesRange() {
 }
 
 function paginationHandler(e) {
+    if (SEARCH_URL !== '') {
+        if (e.target.id === 'previous__page__btn') {
+            currentPage--;
+            checkPagesRange();
+            getMovies(SEARCH_URL, currentPage);
+        } else if (e.target.id === 'next__page__btn') {
+            currentPage++;
+            checkPagesRange();
+            getMovies(SEARCH_URL, currentPage);
+        }
+        return;
+    }
     if (e.target.id === 'previous__page__btn') {
         currentPage--;
         checkPagesRange();
         getMovies(API_URL, currentPage);
-        location.reload();
         setPageNumberToLocal();
+        location.reload();
     } else if (e.target.id === 'next__page__btn') {
         currentPage++;
         checkPagesRange();
         getMovies(API_URL, currentPage);
-        location.reload();
         setPageNumberToLocal();
+        location.reload();
     }
-
 }
 
 function setPageNumberToLocal() {
     localStorage.setItem('page-number', currentPage);
 }
 
-// ! ================ EVENT LISTENERS ================
+/**
+ * ! ================ EVENT LISTENERS ================
+ */
 
 window.addEventListener('DOMContentLoaded', () => {
     getMovies(API_URL, currentPage);
-    checkPagesRange();
 });
 sortByRatingBtn.addEventListener('click', sortByRating);
 sortByDateBtn.addEventListener('click', sortByDate);
 form.addEventListener('submit', searchMovie);
 // ? demo debounce method
-search.addEventListener('input', debounce(checkDebounceDemo, 1000));
+// search.addEventListener('input', debounce(checkDebounceDemo, 1000));
 // search.addEventListener('input', debounce(searchMovie, 1000));
 favoritesBtn.addEventListener('click', (e) => {
     e.target.classList.add('active-tab');
@@ -296,6 +332,5 @@ allBtn.addEventListener('click', (e) => {
     e.target.classList.add('active-tab');
     favoritesBtn.classList.remove('active-tab');
     renderMovies(movieData);
-    console.log(movieData);
 });
 paginationContainer.addEventListener('click', paginationHandler);
